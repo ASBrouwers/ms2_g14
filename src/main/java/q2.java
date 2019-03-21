@@ -49,9 +49,9 @@ import scala.Tuple2;
  * */
 
 public class q2 {
-	int courseId = 1;
-	int quartile = 1;
-	int year = 2008;
+	static int courseId = 1127;
+	static int quartile = 3;
+	static int year = 2007;
 	
 	public static JavaRDD removeHeader(JavaRDD inputRDD) {
         String header = (String) inputRDD.first();
@@ -112,12 +112,16 @@ public class q2 {
         printFirstLinePairRDD("CourseRegistrations",courseRegistrationsPKandTuple);
         
         // filter courseOffers
-        // keep CourseId = var
-        
-        // keep Quartile = var
-        
-        // keep Year = var
-        
+        printEntirePairRDD("CourseOffers, unfiltered", courseOffersPKandTuple);
+        // keep CourseId = var, CourseId is stored in the 2nd column
+        JavaPairRDD<Integer, String[]> courseOffersFilterCourseId = courseOffersPKandTuple.filter(tuple -> Integer.parseInt(tuple._2()[1]) == courseId);
+        printEntirePairRDD("CourseOffers, filtered on CourseId", courseOffersFilterCourseId);
+        // keep Quartile = var, Quartile is stored in the 4th column
+        JavaPairRDD<Integer, String[]> courseOffersFilterCourseIdQuartile = courseOffersFilterCourseId.filter(tuple -> Integer.parseInt(tuple._2()[3]) == quartile);
+        printEntirePairRDD("CourseOffers, filtered on CourseId and Quartile", courseOffersFilterCourseIdQuartile);
+        // keep Year = var, Year is stored in the 3rd column
+        JavaPairRDD<Integer, String[]> fullFilterCourseOffers = courseOffersFilterCourseIdQuartile.filter(tuple -> Integer.parseInt(tuple._2()[2]) == year);
+        printEntirePairRDD("CourseOffers, fully filtered; CourseId, Quartile, and Year", fullFilterCourseOffers);
         
         // filter courseRegistrations - done
         printEntirePairRDD("CourseRegistrations, unfiltered",courseRegistrationsPKandTuple);
