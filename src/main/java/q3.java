@@ -19,7 +19,7 @@ public class q3 {
         return inputRDD;
     }
 	
-	public JavaPairRDD<Integer, String[]> q3a(JavaPairRDD<Integer, String[]> rdd1, JavaPairRDD<Integer, String[]> rdd2) {
+	public static JavaPairRDD<Integer, String[]> q3a() {
 		MersenneTwister rd = new MersenneTwister();
 		
 		String startingPath = "/tmp/tables/"; // Folder where table data is located
@@ -84,7 +84,7 @@ public class q3 {
 		return new JavaPairRDD<Integer, String[]>(null, null, null);
 	}
 	
-	private int[] getRowKeys(int row) {
+	private static int[] getRowKeys(int row) {
 		if (row == 0) {
 			return new int[] {1,2};
 		} else {
@@ -92,11 +92,15 @@ public class q3 {
 		}
 	}
 	
-	private int[] getColKeys(int col) {
+	private static int[] getColKeys(int col) {
 		if (col == 0) {
 			return new int[] {1,3};
 		} else {
 			return new int[] {2,4};
 		}
+	}
+	
+	public static void main(String[] args) {
+		q3a();
 	}
 }
