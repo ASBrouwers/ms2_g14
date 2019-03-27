@@ -62,6 +62,7 @@ public class q3 {
         			return new Tuple2<>(region, list);
         		}
         	}
+        	return new Tuple2<>(null, null);
         })
         		.reduceByKey((V1, V2) -> {
         			ArrayList list = V1;
