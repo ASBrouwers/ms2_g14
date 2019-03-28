@@ -4,6 +4,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
 import java.util.ArrayList;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.random.MersenneTwister;
@@ -19,7 +20,7 @@ public class q3 {
         return inputRDD;
     }
 	
-	public static JavaPairRDD<Integer, String[]> q3a() {
+	public static void q3a() {
 		MersenneTwister rd = new MersenneTwister();
 		
 		String startingPath = "/tmp/tables/"; // Folder where table data is located
@@ -36,52 +37,75 @@ public class q3 {
         
         JavaPairRDD<Integer, String> studentRegs = studentRegsText.mapToPair(row -> {
         	String[] split = row.split(",");
-        	return new Tuple2<>(Integer.valueOf(split[2]),"G");
-        });
+        	return new Tuple2<>(split[2],"G");
+        }).filter(row -> (!row._1.equals("null"))).mapToPair(row -> new Tuple2<>(Integer.valueOf(row._1), row._2));
         
         JavaPairRDD<Integer, String> quantilePoints = quantilePointsText.mapToPair(row -> {
         	String[] split = row.split(",");
-        	return new Tuple2<>(Integer.valueOf(split[0]), "Q");
-        });
+        	return new Tuple2<>(split[0], "Q");
+        }).filter(row -> (!row._1.equals("null"))).mapToPair(row -> new Tuple2<>(Integer.valueOf(row._1), row._2));
 		
+        // (Grade, G) and (Quantile, Q)
         JavaPairRDD<Integer, String> union = studentRegs.union(quantilePoints);
         
-        JavaPairRDD<Integer, ArrayList<Tuple3<String, Integer, Integer>>> result = union.mapToPair(row -> {
-        	if (row._2 == "G") {
-        		int r = rd.nextInt(2);
-        		for (int region : getRowKeys(r)) {
-        			ArrayList<Tuple3<String, Integer, Integer>> list = new ArrayList<>();
-        			list.add(new Tuple3<>("G", 1, row._1));
-        			return new Tuple2<>(region, list);
-        		}
-        	} else { // "Q"
-        		int c = rd.nextInt(2);
-        		for (int region : getColKeys(c)) {
-        			ArrayList<Tuple3<String, Integer, Integer>> list = new ArrayList<>();
-        			list.add(new Tuple3<>("Q", 1, row._1));
-        			return new Tuple2<>(region, list);
+        // ArrayList of 1 row (Integer, String)
+        JavaPairRDD<Integer, ArrayList<Tuple2<Integer, String>>> listed = union.mapToPair(row -> {
+        	ArrayList<Tuple2<Integer, String>> l = new ArrayList<>();
+        	l.add(row);
+        	return new Tuple2<>(row._1, l);
+        });
+        
+        // Flatmap to get reducer
+        JavaPairRDD<Integer, ArrayList<Tuple2<Integer, String>>> withKeys = listed.flatMapToPair(row -> {
+        	int x = rd.nextInt(2);
+        	int[] reducers;
+        	ArrayList<Tuple2<Integer, ArrayList<Tuple2<Integer, String>>>> l = new ArrayList<>();
+        	if (row._2.iterator().next()._2.equals("G")) {
+        		reducers = getRowKeys(x);
+        	} else {
+        		reducers = getColKeys(x);
+        	}
+        	for (int r : reducers) {
+        		l.add(new Tuple2<>(r, row._2));
+        	}
+        	return l.iterator();
+        });
+        
+        //==============> Sent to reducer
+        
+        // ArrayList combine all rows at this reducer
+        JavaPairRDD<Integer, ArrayList<Tuple2<Integer, String>>> reduced = withKeys.reduceByKey((V1, V2) -> {
+        	ArrayList list = V1;
+        	list.addAll(V2);
+        	return list;
+        });
+        
+        // Split result into 2 ArrayLists
+        JavaPairRDD<Integer, Integer> lessThanQuantile = reduced.flatMapToPair(row -> {
+        	ArrayList<Tuple2<Integer, String>> allTuples = row._2;
+        	ArrayList<Tuple2<Integer, String>> gTuples = new ArrayList<>();
+        	ArrayList<Tuple2<Integer, String>> qTuples = new ArrayList<>();
+        	for (Tuple2<Integer, String> t : allTuples) {
+        		if (t._2.equals("G")) {
+        			gTuples.add(t);
+        		} else {
+        			qTuples.add(t);
         		}
         	}
-        	return new Tuple2<>(null, null);
-        })
-        		.reduceByKey((V1, V2) -> {
-        			ArrayList list = V1;
-        			list.addAll(V2);
-        			return list;
-        		});
-        
-        String str = "";
-        List<Tuple2<Integer, ArrayList<Tuple3<String, Integer, Integer>>>> test = result.take(10);
-        for (Tuple2<Integer, ArrayList<Tuple3<String, Integer, Integer>>> t : test) {
-        	str += t._1 + "\n";
-        	for (Tuple3<String, Integer, Integer> s : t._2) {
-        		str += s._1() + ", " + s._3();
+        	ArrayList<Tuple2<Integer, Integer>> l = new ArrayList<>();
+        	
+        	for (Tuple2<Integer, String> quantile : qTuples) {
+        		for (Tuple2<Integer, String> grade : gTuples) {
+        			if (grade._1 <= quantile._1) {
+        				l.add(new Tuple2<>(quantile._1, 1));
+        			}
+        		}
         	}
-        }
-        System.out.println(str);
+        	return l.iterator();
+        });
         
-		
-		return new JavaPairRDD<Integer, String[]>(null, null, null);
+        JavaPairRDD<Integer, Integer> result = lessThanQuantile.reduceByKey((v1, v2) -> v1 + v2);
+        result.collect().forEach(row -> System.out.println(row._1 + ": " + row._2));
 	}
 	
 	private static int[] getRowKeys(int row) {
