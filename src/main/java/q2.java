@@ -245,9 +245,49 @@ public class q2 {
 			printPartPairRDD(union, take_var, "union after running reducebykey");
 		}
 		
+		// union now only contains the row with the grades of the desired courseOfferId
 		union = union.filter(row -> rowContains(row._2(),"CO") == true);
-		printPartPairRDD(union, take_var, "union that only contains matching courseOfferIds");
-
+		if (show_intermediate_rdds) {
+			printPartPairRDD(union, take_var, "union that only contains matching courseOfferIds");
+		}
+		
+		// use flatmap to split the remaining row in [union] into new tuples of a new rdd
+		JavaPairRDD<Integer, String[]> grades = union.flatMapToPair(tuple -> {
+			List<Tuple2<Integer,String[]>> out = new ArrayList<>();
+			for (String x : tuple._2()) {
+				if (!x.contentEquals("CO")) {
+				String[] val = {x};
+				out.add(new Tuple2<>(tuple._1(),val));
+				}
+			}
+			return out.iterator();
+		});
+		if (show_intermediate_rdds) {
+			printPartPairRDD(grades, take_var, "result after flatMapToPair");
+		}
+		
+		// use rdd.count() to determine the count for the average calculation
+		float count = grades.count();
+		
+		// use reducebykey to calculate the sum of all grades in [grades]
+		JavaPairRDD<Integer,String[]> sum_grade = grades.reduceByKey((a,b) -> {
+			int part_sum = Integer.parseInt(a[0]) + Integer.parseInt(b[0]);
+			String out_s = part_sum + "";
+			String[] out = {out_s};
+			return out;
+		});
+		if (show_intermediate_rdds) {
+			printPartPairRDD(sum_grade, take_var, "sum of all grades for selected courseOfferId");
+		}
+		
+		// store sum of [grades] in Java variable and calculate and print the average.
+		if (sum_grade.count() == 1) {
+			float sum = Integer.parseInt(sum_grade.first()._2()[0]);
+			float average = sum/count;
+			System.out.println("Average grade: " + average + ", for CourseId = " + courseId + ", Quartile = " + quartile + ", Year = " + year + ", and all grades >= 5");
+		} else {
+			System.out.println("error - the final RDD contains too many rows to complete the computation");
+		}
 		
 		// shutdown the spark context
 		sc.close();
