@@ -13,6 +13,7 @@ import scala.Tuple2;
 import scala.Tuple3;
 
 public class q3 {
+	private static int sqrtNrReducers = 6;
 	
 	public static JavaRDD removeHeader(JavaRDD inputRDD) {
         String header = (String) inputRDD.first();
@@ -20,10 +21,10 @@ public class q3 {
         return inputRDD;
     }
 	
-	public static void q3a() {
+	public static void q3b() {
 		MersenneTwister rd = new MersenneTwister();
 		
-		String startingPath = "/tmp/tables_reduced/"; // Folder where table data is located
+		String startingPath = "/tmp/tables/"; // Folder where table data is located
         String master = "local[4]"; // Run locally with 1 thread
 
         // Setup Spark
@@ -50,16 +51,11 @@ public class q3 {
         
         // Flatmap to get reducer
         JavaPairRDD<Integer, ArrayList<Tuple2<Integer, String>>> withKeys = union.flatMapToPair(row -> {
-        	int x = rd.nextInt(2);
-        	int[] reducers;
+        	
+        	int[] reducers = q3a(row, sqrtNrReducers);
         	
         	ArrayList<Tuple2<Integer,ArrayList<Tuple2<Integer, String>>>> l = new ArrayList<>();
         	
-        	if (row._2.equals("G")) {
-        		reducers = getRowKeys(x);
-        	} else {
-        		reducers = getColKeys(x);
-        	}
         	for (int r : reducers) {
         		ArrayList<Tuple2<Integer, String>> rowList = new ArrayList<>();
         		rowList.add(row);
@@ -108,23 +104,24 @@ public class q3 {
         result.sortByKey().collect().forEach(row -> System.out.println(row));
 	}
 	
-	private static int[] getRowKeys(int row) {
-		if (row == 0) {
-			return new int[] {1,2};
-		} else {
-			return new int[] {3,4};
+	private static int[] q3a(Tuple2<Integer, String> row, int sqrtReducers) {
+		MersenneTwister rd = new MersenneTwister();
+		int x = rd.nextInt(sqrtReducers);
+		int[] reducers = new int[sqrtReducers];
+		if (row._2.contentEquals("G")) { // Grade row (Row)
+			for (int i = 0; i < sqrtReducers; i++) {
+				reducers[i] = x * sqrtReducers + i;
+			}
+		} else { // Quantile row (Column)
+			for (int i = 0; i < sqrtReducers; i++) {
+				reducers[i] = sqrtReducers * i + x;
+			}
 		}
+		return reducers;
 	}
 	
-	private static int[] getColKeys(int col) {
-		if (col == 0) {
-			return new int[] {1,3};
-		} else {
-			return new int[] {2,4};
-		}
-	}
 	
 	public static void main(String[] args) {
-		q3a();
+		q3b();
 	}
 }
