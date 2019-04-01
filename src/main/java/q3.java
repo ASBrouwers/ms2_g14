@@ -24,7 +24,7 @@ public class q3 {
 	public static void q3b() {
 		MersenneTwister rd = new MersenneTwister();
 		
-		String startingPath = "/tmp/tables/"; // Folder where table data is located
+		String startingPath = "/home/student/Desktop/tables/"; // Folder where table data is located
         String master = "local[4]"; // Run locally with 1 thread
 
         // Setup Spark
@@ -34,7 +34,7 @@ public class q3 {
         JavaSparkContext sc = new JavaSparkContext(conf);
         
         JavaRDD<String> studentRegsText = removeHeader(sc.textFile(startingPath + "CourseRegistrations.table"));
-        JavaRDD<String> quantilePointsText = removeHeader(sc.textFile(startingPath + "QuantilePoints.table"));
+        JavaRDD<String> quantilePointsText = removeHeader(sc.textFile(startingPath + "QuantilePoints.table.txt"));
         
         JavaPairRDD<Integer, String> studentRegs = studentRegsText.mapToPair(row -> {
         	String[] split = row.split(",");
