@@ -42,17 +42,14 @@ import scala.Tuple2;
  *  Equi-join pseudo code
  *  	1. read files into RDDs - done
  * 		2. convert each RDD into key,value - done
- * 		3. union the pair RDDs
- * 		4. reducebykey
+ * 		3. union the pair RDDs - done
+ * 		4. reducebykey -done
  * 			* create cartesian product - where multiple rows are stored in one tuple
  * 			* use flatmap to split the cartesian product into single rows
  * 			* filter rows on courseofferid columns match.
  * */
 
 public class q2 {
-	static int courseId = 1127;
-	static int quartile = 3;
-	static int year = 2007;
 	static int take_var = 20;
 	static boolean show_intermediate_rdds = false;
 
@@ -157,7 +154,7 @@ public class q2 {
 	}
 
 	
-	public static void query2alternative() {
+	public static void query2(int courseId, int quartile, int year) {
 		String startingPath; // Folder where table data is located
 		startingPath = "/tmp/tables/";
 		//startingPath = "/tmp/tables_reduced/";
@@ -206,9 +203,7 @@ public class q2 {
 			printPartPairRDD(courseRegistrations, take_var, "CourseRegistrations, after filtering");
 		}
 
-		/*
-		 * possibility: change layout and remove unneeded columns
-		 * */
+		// remove unneeded columns	
 		int[] keepthesecolscr = {2};
 		JavaPairRDD<Integer, String[]> courseRegistrationsMin = courseRegistrations
 				.mapToPair(row -> new Tuple2<>(row._1(), removeUnneededCols(row._2(),keepthesecolscr)));
@@ -294,8 +289,37 @@ public class q2 {
 	}
 
 	public static void main(String[] args) {
-		// query2();
-		query2alternative();
+		int courseId = 31814;
+		int quartile = 4;
+		int year = 2015;
+		query2(courseId, quartile, year);
+		
+		/*
+		 * ** tests **
+		 * courseId = 1127
+		 * quartile = 3
+		 * year = 2007
+		 * average grade spark = 6.365217
+		 * average grade sql = 
+		 * 
+		 * courseId = 23246
+		 * quartile = 4
+		 * year = 2017
+		 * average grade spark = 5.5972223
+		 * average grade sql = 
+		 * 
+		 * courseId = 12457
+		 * quartile = 2
+		 * year = 2014
+		 * average grade spark = 7.060606
+		 * average grade sql = 
+		 * 
+		 * courseId = 31814
+		 * quartile = 4
+		 * year = 2015
+		 * average grade spark = 6.424779
+		 * average grade sql = 
+		 * */
 	}
 
 }
