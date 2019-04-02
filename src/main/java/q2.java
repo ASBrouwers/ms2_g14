@@ -53,13 +53,13 @@ public class q2 {
 	static int take_var = 20;
 	static boolean show_intermediate_rdds = false;
 
-	public static JavaRDD removeHeader(JavaRDD inputRDD) {
+	public static JavaRDD<String> removeHeader(JavaRDD<String> inputRDD) {
 		String header = (String) inputRDD.first();
 		inputRDD = inputRDD.filter(row -> !row.equals(header));
 		return inputRDD;
 	}
 
-	public static JavaRDD<String> addIdentifier(JavaRDD input, String id) {
+	public static JavaRDD<String> addIdentifier(JavaRDD<String> input, String id) {
 		JavaRDD<String> output = input.map(row -> row += "," + id);
 		return output;
 	}
