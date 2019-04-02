@@ -296,29 +296,30 @@ public class q2 {
 		
 		/*
 		 * ** tests **
+		 * randomly selected entries from CourseOffers
 		 * courseId = 1127
 		 * quartile = 3
 		 * year = 2007
 		 * average grade spark = 6.365217
-		 * average grade sql = 
+		 * average grade sql   = 6.3652173913043478
 		 * 
 		 * courseId = 23246
 		 * quartile = 4
 		 * year = 2017
 		 * average grade spark = 5.5972223
-		 * average grade sql = 
+		 * average grade sql   = 5.5972222222222222
 		 * 
 		 * courseId = 12457
 		 * quartile = 2
 		 * year = 2014
 		 * average grade spark = 7.060606
-		 * average grade sql = 
+		 * average grade sql   = 7.0606060606060606
 		 * 
 		 * courseId = 31814
 		 * quartile = 4
 		 * year = 2015
 		 * average grade spark = 6.424779
-		 * average grade sql = 
+		 * average grade sql   = 6.4247787610619469
 		 * */
 	}
 
