@@ -64,13 +64,6 @@ public class q2 {
 		return output;
 	}
 	
-	// creates arraylist with one item in it
-	public static ArrayList<String[]> createStringArrayList(String[] input) {
-		ArrayList<String[]> output = new ArrayList<String[]>();
-		output.add(input);
-		return output;
-	}
-	
 	public static boolean rowContains(String[] row, String id) {
 		boolean result = false;
 		for (String r : row) {
@@ -236,7 +229,7 @@ public class q2 {
 			}
 			return result;
 		});
-		if (show_intermediate_rdds) {
+		if (show_intermediate_rdds || true) {
 			printPartPairRDD(union, take_var, "union after running reducebykey");
 		}
 		
@@ -289,9 +282,9 @@ public class q2 {
 	}
 
 	public static void main(String[] args) {
-		int courseId = 31814;
+		int courseId = 18937;
 		int quartile = 4;
-		int year = 2015;
+		int year = 2007;
 		query2(courseId, quartile, year);
 		
 		/*
