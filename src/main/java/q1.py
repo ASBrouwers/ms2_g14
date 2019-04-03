@@ -24,8 +24,8 @@ schemaCR = StructType([
     StructField("StudentRegistrationId", IntegerType(), True),
     StructField("Grade", IntegerType(), True)])
 
-CourseOffers = spark.read.csv("/home/student/tables2/tables/CourseOffers.table", header=False, schema=schemaCO)
-CourseRegistrations = spark.read.csv("/home/student/tables2/tables/CourseRegistrations.table", header=False, schema=schemaCR)
+CourseOffers = spark.read.csv("/tmp/tables/CourseOffers.table", header=False, schema=schemaCO)
+CourseRegistrations = spark.read.csv("/tmp/tables/CourseRegistrations.table", header=False, schema=schemaCR)
 
 joinResult = CourseOffers.join(CourseRegistrations, CourseOffers.COId == CourseRegistrations.CourseOfferId)
 
