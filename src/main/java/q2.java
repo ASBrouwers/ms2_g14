@@ -280,15 +280,130 @@ public class q2 {
 		// shutdown the spark context
 		sc.close();
 	}
+	
+	/* ** reworked equi - join ** */
+	public static String query2alternative(int courseId, int quartile, int year) {
+		String func_result = "";
+		String courseOffersTableId = "CO";
+		String courseRegistrationsTableId = "CR";
+		
+		String startingPath; // Folder where table data is located
+		startingPath = "/tmp/tables/";
+		//startingPath = "/tmp/tables_reduced/";
+		String master = "local[4]"; // Run locally with 4 threads
+
+		// Setup Spark
+		SparkConf conf = new SparkConf().setAppName(q2.class.getName()).setMaster(master);
+		JavaSparkContext sc = new JavaSparkContext(conf);
+
+		JavaRDD<String> textCourseOffers = removeHeader(sc.textFile(startingPath + "CourseOffers.table"));
+		JavaRDD<String> textCourseRegistrations = removeHeader(sc.textFile(startingPath + "CourseRegistrations.table"));
+		//textCourseRegistrations = textCourseRegistrations.sample(false, 0.25);
+		JavaRDD<String> textCourseOffersId = addIdentifier(textCourseOffers, courseOffersTableId);
+		JavaRDD<String> textCourseRegistrationsId = addIdentifier(textCourseRegistrations, courseRegistrationsTableId);
+
+		// first column is the PK
+		JavaPairRDD<Integer, String[]> courseOffers = textCourseOffersId
+				.mapToPair(row -> new Tuple2<>(Integer.valueOf(row.split(",")[0]), row.split(",")));
+				
+		// first column is the PK
+		JavaPairRDD<Integer, String[]> courseRegistrations = textCourseRegistrationsId
+				.mapToPair(row -> new Tuple2<>(Integer.valueOf(row.split(",")[0]), row.split(",")));
+		/* ** FILTERING ** */		
+		// filter courseOffers - done
+		// keep CourseId = var, CourseId is stored in the 2nd column
+		// keep Quartile = var, Quartile is stored in the 4th column
+		// keep Year = var, Year is stored in the 3rd column
+		courseOffers = courseOffers.filter(tuple -> Integer.parseInt(tuple._2()[1]) == courseId);
+		courseOffers = courseOffers.filter(tuple -> Integer.parseInt(tuple._2()[3]) == quartile);
+		courseOffers = courseOffers.filter(tuple -> Integer.parseInt(tuple._2()[2]) == year);
+		// filter courseRegistrations - done
+		// remove grade = "null"
+		courseRegistrations = courseRegistrations.filter(tuple -> !tuple._2()[2].contentEquals("null"));
+		// keep grade >= 5
+		courseRegistrations = courseRegistrations.filter(tuple -> Integer.parseInt(tuple._2()[2]) >= 5);
+		
+		// remove unneeded columns	
+		int[] keepthesecolscr = {2,(courseRegistrations.first()._2().length-1)};
+		JavaPairRDD<Integer, String[]> courseRegistrationsMin = courseRegistrations
+				.mapToPair(row -> new Tuple2<>(row._1(), removeUnneededCols(row._2(),keepthesecolscr)));
+
+		int[] keepthesecolsco = {(courseOffers.first()._2().length-1)};
+		JavaPairRDD<Integer, String[]> courseOffersMin = courseOffers
+				.mapToPair(row -> new Tuple2<>(row._1(), removeUnneededCols(row._2(),keepthesecolsco)));
+		
+		JavaPairRDD<Integer,String[]> union = courseOffersMin.union(courseRegistrationsMin);
+		
+		// create partial cartesian
+		JavaPairRDD<Integer, ArrayList<Tuple2<Integer,String[]>>> unionList = union.mapToPair(tuple ->{
+			ArrayList<Tuple2<Integer,String[]>> list = new ArrayList<>();
+			list.add(tuple);
+			Tuple2<Integer, ArrayList<Tuple2<Integer,String[]>>> result = new Tuple2<>(tuple._1, list);
+			return result;
+		});
+		
+		JavaPairRDD<Integer, ArrayList<Tuple2<Integer,String[]>>> preJoin = unionList.reduceByKey((a,b) -> {
+			ArrayList<Tuple2<Integer, String[]>> list = a;
+        	list.addAll(b);
+        	return list;
+		});
+		
+		JavaPairRDD<Integer,String[]> join = preJoin.flatMapToPair(tuple -> {
+			ArrayList<Tuple2<Integer,String[]>> all = tuple._2;		
+			ArrayList<Tuple2<Integer,String[]>> courseOffersList = new ArrayList<>();
+			ArrayList<Tuple2<Integer,String[]>> courseRegistrationsList = new ArrayList<>();	
+			for (Tuple2<Integer,String[]> i : all) {
+				if (i._2()[i._2().length-1].contentEquals(courseOffersTableId)) {
+					courseOffersList.add(i);
+				} else {
+					courseRegistrationsList.add(i);
+				}
+			}
+			//System.out.println("size of courseRegistrationsList: " + courseRegistrationsList.size());
+			ArrayList<Tuple2<Integer,String[]>> out = new ArrayList<>();
+			for (Tuple2<Integer,String[]> courseOffer : courseOffersList) {
+				for (Tuple2<Integer,String[]> courseRegistration : courseRegistrationsList) {
+					if (courseOffer._1 == courseRegistration._1) {
+						String[] content = new String[courseOffer._2().length + courseRegistration._2().length];
+						for (int i = 0; i < courseOffer._2().length; i++) {
+							content[i] = courseOffer._2()[i];
+						}
+						for (int i = courseOffer._2().length; i < courseOffer._2().length + courseRegistration._2().length; i++) {
+							content[i] = courseRegistration._2()[i];
+						}
+						out.add(new Tuple2<>(courseOffer._1(),content));
+					}
+				}
+			}	
+			return out.iterator();
+		});
+		printPartPairRDD(join, take_var, "output from reworked join");
+		
+		// reduceByKey to obtain sum and count
+				
+		
+		
+
+		// shutdown the spark context
+		sc.close();
+		return func_result;
+	}
 
 	public static void main(String[] args) {
-		int courseId = 18937;
+		/*int courseId = 18937;
 		int quartile = 4;
 		int year = 2007;
-		query2(courseId, quartile, year);
+		query2(courseId, quartile, year);*/
+		
+		String test_results = "** Results ** \n";
+		test_results += query2alternative(1127,3,2007) + "\n";
+		//test_results += query2alternative(23246,4,2017) + "\n";
+		//test_results += query2alternative(12457,2,2014) + "\n";
+		//test_results += query2alternative(31814,4,2015) + "\n";
+		System.out.println(test_results);
 		
 		/*
-		 * ** tests **
+		 * ** tests using initial query2(), using full tables**
 		 * randomly selected entries from CourseOffers
 		 * courseId = 1127
 		 * quartile = 3
