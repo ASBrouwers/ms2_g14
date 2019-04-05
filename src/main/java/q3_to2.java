@@ -19,8 +19,8 @@ public class q3_to2 {
     }
 	
 	public static void q3b(int courseId, int year, int quartile) {
-		String startingPath = "/home/student/Desktop/tables/"; // Folder where table data is located
-        String master = "local[8]"; // Run locally with 1 thread
+		String startingPath = "/tmp/tables/"; // Folder where table data is located
+        String master = "local[2]"; // Run locally with 1 thread
 
         // Setup Spark
         SparkConf conf = new SparkConf()
