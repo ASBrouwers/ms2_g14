@@ -155,8 +155,12 @@ public class q2 {
 	public static void main(String[] args) {
 		Logger.getLogger("org").setLevel(Level.WARN);
 		Logger.getLogger("akka").setLevel(Level.WARN);
-		performTests();
-		//query2(%1%,%2%,%3%);
+		//performTests();
+		//perform one run with custom parameters
+		int courseId = %1%;
+		int quartile = %2%;
+		int year = %3%;
+		query2(courseId,quartile,year);
 	}
 
 }
