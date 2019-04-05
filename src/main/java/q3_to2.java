@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.Level;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import scala.Tuple2;
 
@@ -28,7 +29,7 @@ public class q3_to2 {
         
         JavaSparkContext sc = new JavaSparkContext(conf);
         
-        JavaRDD<String> studentRegsText = sc.textFile(startingPath + "CourseRegistrations.table");
+        JavaRDD<String> studentRegsText = sc.textFile(startingPath + "CourseRegistrations2.table");
         String studentRegsHeader = studentRegsText.first();
         studentRegsText = studentRegsText.filter(row -> !row.equals(studentRegsHeader) && !row.contains("null"));
         JavaRDD<String> courseOffersText = sc.textFile(startingPath + "CourseOffers.table");
@@ -106,7 +107,9 @@ public class q3_to2 {
         });
         
         JavaPairRDD<Integer, Double> result = sumCount.mapToPair(row -> new Tuple2<>(row._1, (double)row._2._2 / row._2._1));
-        result.collect().forEach(row -> System.out.println(row));
+        List<Tuple2<Integer, Double>> collect = result.collect();
+        System.out.println();
+        collect.forEach(row -> System.out.println(row));
         sc.close();
 	}
 	
